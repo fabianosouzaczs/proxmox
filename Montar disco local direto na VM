@@ -1,0 +1,22 @@
+lsblk = para listar todos os disco e assim saber quais são
+
+ls /dev/disk/by-id = Para saber quais as lsblm
+ dos disco para mondar na VMs
+
+qm set "id da VM" -scsi1 /dev/disk/by-id/"id do disco"
+
+qm set 100 -scsi1 /dev/disk/by-id/ata-ST1000DM010-2EP102_Z9AEYBC5
+qm set 100 -scsi2 /dev/disk/by-id/ata-ST1000DM010-2EP102_ZN1NASCC
+qm set 100 -scsi3 /dev/disk/by-id/ata-WDC_WD10JPCX-24UE4T0_WD-WXN1EA5718X7
+qm set 100 -scsi4 /dev/disk/by-id/ata-ST1000DM010-2EP102_ZN1N95X6
+qm set 100 -scsi5 /dev/disk/by-id/ata-SSD_128GB_YS202010301085AA
+
+nesse esquema vai ser adicionado 4 disco SCSI na VM que ser selecionado
+
+ata-ST1000DM010-2EP102_Z9AEYBC5
+ata-ST1000DM010-2EP102_ZN1NASCC
+ata-WDC_WD10JPCX-24UE4T0_WD-WXN1EA5718X7
+ata-WDC_WD5000AZRX-00L4HB0_WD-WCC4JHVCE22L
+
+
+qm set 100 -scsi1 /dev/disk/by-id/ata-WDC_WD10EZEX-22MFCA0_WD-WCC6Y1EF23VR
