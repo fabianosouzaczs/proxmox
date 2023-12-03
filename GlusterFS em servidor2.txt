@@ -1,0 +1,95 @@
+# Criando o GlusterFS Server #
+
+etidar o arquivo que controla o GlusterFS que fica!
+## /etc/glusterfs/glusterd.vol ##
+
+gluster peer probe proxmox02
+gluster volume create VMS proxmox01: /DATA/vms
+
+gluster volume add-brick VMS replica 2 proxmox02: /DATA/vms
+
+gluster vol status VMS
+gluster vol info VMS
+
+gluster peer probe proxmox03
+gluster volume add-brick VMS replica 3 proxmox03: /DATA/vms
+
+gluster vol set VMS cluster.heal-timeout 5
+gluster volume heal VMS enable
+gluster vol set VMS cluster.quorum-reads false
+gluster vol set VMS cluster.quorum-count 1
+gluster vol set VMS network.ping-timeout 2
+gluster volume set VMS cluster. favorite-child-policy mtime
+gluster volume heal VMS granular-entry-heal enable 
+gluster volume set VMS cluster.data-self-heal-algorithm full
+
+
+#
+
+/dev/sdb1 /DATA xfs defaults 0 0
+
+proxmox01: VMS /vms glusterfs defaults,_netdev 0 0
+
+pve01: VMS /vms glusterfs defaults,_netdev, backupvolfile-server-pve02 0 0
+
+/etc/glusterfs/datastore.vol /vms glusterfs defaults,_netdev, x-systemd. automount 0 0 gluster01: VMS /vms glusterfs defaults,_netdev, x-systemd. automount, backupvolfile-server=gluster02 @ 0
+
+# volume management
+
+volume management
+    type mgmt/glusterd
+    option working-directory /var/lib/glusterd
+    option transport-type socket
+    option transport.socket.keepalive-time 10
+    option transport.socket.keepalive-interval 2
+    option transport.socket.read-fail-log off
+    option transport.socket.listen-port 24007
+    option transport.rdma.bind-address proxmox01
+    option transport.socket.bind-address proxmox01
+    option transport.tcp.bind-address proxmox01
+    option ping-timeout 0
+    option event-threads 1
+#   option lock-timer 180
+#   option transport.address-family inet6
+#   option base-port 49152
+    option max-port  60999
+end-volume
+
+
+
+## Arquivo Original  ##
+vim ou nano para etidar  /etc/glusterfs/glusterd.vol
+
+
+volume management
+
+	type mgmt/glusterd
+	option working-directory /var/lib/glusterd
+	option transport-type socket
+	option transport.socket.keepalive-time 10
+	option transport.socket.keepalive-interval 2
+	optiontransport.socket.read-fail-log off
+	optiontransport.socket.listen-port 24007
+	option ping-timeout 0 
+	option event-threads 1
+option transport.rdma.bind-address gluster1
+option transport.socket.bind-address gluster1
+option transport.tcp.bind-address gluster1
+	option lock-timer 180
+	option transport.address-family inet6
+	option base-port 49152
+	option max-port 60999
+end-volume
+
+fazer essa alteração em cada servidor Gluster mudando somente o nome
+de gluster1 para gluster2
+
+## ativando o serviço gluster no servidor ##
+systemctl enable glusterd.service
+systemctl start glusterd.service
+
+## comando para saber se o serviço gluster que trabalha
+na porta 24007 esta ativo ##
+ss -atpn | grep 24007
+
+ 

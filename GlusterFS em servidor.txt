@@ -1,0 +1,25 @@
+
+https://manuais.ifsertao-pe.edu.br/books/infraestrutura-de-redes/page/1-instala%C3%A7%C3%A3o-do-proxmox
+
+#Storage compartilhado,entre Proxmox!#
+
+#1º temos que instalar o glusterfs nos servidores pelo link.
+link https://download.gluster.org/pub/gluster/glusterfs/10/LATEST/Debian/
+terar que entrar na pastar 10/LATEST/Debian
+
+#E rodar o comando!
+wget -O - https://download.gluster.org/pub/gluster/glusterfs/10/rsa.pub | apt-key add -
+#e fazer isso em cada Shell separado por servidor!
+
+#E agora vamos adicionar o repositorio do Gluster!
+echo deb [arch=amd64] https://download.gluster.org/pub/gluster/glusterfs/10/LATEST/Debian/bullseye/amd64/apt bullseye main > /etc/apt/sources.list.d/gluster.list 
+
+#e apos isso dar um apt update em cada servidor!
+apt full-upgrade
+
+#Vamos agora instalar o Servidor GluisterFS em cada servidor!
+apt install glusterfs-server -y
+systemctl enable glusterd.service 
+
+
+

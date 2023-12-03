@@ -1,0 +1,212 @@
+Neste ponto o armazenamento local para as Máquinas Virtuais encontra-se definido na partição /dev/sda4 e montado na pasta /mnt/lv/vmstg, e o serviço Gluster instalado, configurado e funcional. Com isso, faz-se necessário definir um Volume Gluster que utilize a partição montada, para que a ferramenta viabilize a hiperconvergência com a replica das VMs entre os servidores.
+
+Caso os 3 Servidores estejam com o Proxmox instalado, configurado, e o serviço Gluster também instalado e configurado, deve-se seguir os passos do tópico seguinte (7.1. CRIAÇÃO DO VOLUME DO TIPO RÉPLICA NOS 3 SERVDIORES). Caso somente 1 Servidor esteja nesse estado, deve-se pular o tópico seguinte e ir para o próximo (7.2. CRIAÇÃO DO VOLUME DO TIPO DISTRIBUÍDO EM 1 SERVIDOR).
+
+7.1. CRIAÇÃO DO VOLUME DO TIPO RÉPLICA NOS 3 SERVIDORES
+
+Neste cenário será criado um Volume Gluster do tipo Replicado simultaneamente nos 3 Servidores, visto que todos eles já possuem o Proxmox com o GlusterFS.
+
+Os comandos seguintes só devem ser executados em um Hosts, sendo que os demais são configurados automaticamente pelo serviço Gluster.
+
+Para verificar a definição atual do serviço Gluster, deve-se executar:
+
+gluster peer status
+#gluster pool list
+#gluster peer status
+Mostrará o seguinte resultado, pois não há nenhum volume definido e os outros servidores ainda não fazem parte do Gluster:
+
+UUID                                    Hostname        State
+f65851be-3a13-4e43-9ba3-45a9054c4e5a    localhost       Connected 
+
+Number of Peers: 0
+
+A princípio é necessário adicionar os demais Servers ao pool do Gluster. Considerando que o pool está sendo configurado a partir do host 1, é necessário adicionar os Host 2 e 3 (mais uma vez, adaptar os nomes conforme o Campus):
+
+gluster peer probe gluster2
+#gluster peer probe gluster2.reitoria.ifsertao-pe.edu.br
+#gluster peer probe gluster3.reitoria.ifsertao-pe.edu.br
+Para conferir se foram adicionados:
+
+gluster pool list
+#gluster pool list
+#gluster peer status
+Mostrará o seguinte resultado:
+
+9e90a572-3d33-458e-a202-f0d9be1054bb  gluster2.reitoria.ifsertao-pe.edu.br  Connected 
+06e41fd6-88fd-4c70-afca-e9b5ca80c144  gluster3.reitoria.ifsertao-pe.edu.br  Connected 
+989a97bc-3743-48e3-864f-f226369610ce  localhost
+
+Number of Peers: 3
+
+Neste ponto o Volume Gluster pode ser criado. É interessante executar o comando seguinte antes. Ele indicará que nenhum volume foi configurado ainda.
+
+gluster volume info
+#gluster volume info
+O comando seguinte cria o Volume GlusterFS, de nome "VMS" do tipo Réplica nos 3 Hosts. Conforme especificado após o nome dos Hosts no comando (depois do ":"), o volume utilizará o diretório /mnt/lv/vmstg onde a partição LVM foi montada anteriormente.
+
+#gluster volume create VMS replica 3 gluster1.reitoria.ifsertao-pe.edu.br:/mnt/lv/vmstg/vms gluster2.reitoria.ifsertao-pe.edu.br:/mnt/lv/vmstg/vms gluster3.reitoria.ifsertao-pe.edu.br:/mnt/lv/vmstg/vms
+Agora é necessário iniciar o volume criado:
+
+#gluster volume start VMS
+Para verifica o volume criado:
+
+#gluster volume info
+Mostrará o seguinte resultado:
+
+Volume Name: VMS
+Type: Replicate
+Volume ID: 632140b2-528a-40d1-a075-dc460b2ec023
+Status: Started
+Snapshot Count: 0
+Number of Bricks: 1 x 3 = 3
+Transport-type: tcp
+Bricks:
+Brick1: gluster1.reitoria.ifsertao-pe.edu.br:/mnt/lv/vmstg/vms
+Brick2: gluster2.reitoria.ifsertao-pe.edu.br:/mnt/lv/vmstg/vms
+Brick3: gluster3.reitoria.ifsertao-pe.edu.br:/mnt/lv/vmstg/vms
+Options Reconfigured:
+cluster.granular-entry-heal: on
+storage.fips-mode-rchecksum: on
+transport.address-family: inet
+nfs.disable: on
+performance.client-io-threads: off
+
+Na saída é possível observar que o volume de nome "VMS" do tipo "Replicate" foi criado e iniciado e possui com 3 Bricks, indicando que o volume está configurado com os 3 Servidores.
+
+É interessante acessar os outros 2 Servidores e verificar se o volume foi criado neles, executando os comandos de verificação anteriores:
+
+#gluster pool list
+#gluster peer status
+#gluster volume info
+Neste ponto o volume está criado, inicializado, mas ainda não pode ser utilizado. É necessário montá-lo em um ponto de montagem (assim como foi feito na partição LVM anteriormente), executando os comandos seguintes.
+
+Deve-se criar o ponto de montagem nos 3 Hosts do Cluster:
+
+#mkdir -p /vms
+Deve-se configurar em seguida a montagem automática no boot do sistema, executando o seguinte comando:
+
+No Host 1:
+
+#echo "gluster1:VMS /vms glusterfs defaults,_netdev,x-systemd.automount,backupvolfile-server=gluster2,backupvolfile-server=gluster3 0 0" >> /etc/fstab
+No Host 2:
+
+#echo "gluster2:VMS /vms glusterfs defaults,_netdev,x-systemd.automount,backupvolfile-server=gluster1,backupvolfile-server=gluster3 0 0" >> /etc/fstab
+No Host 3:
+
+#echo "gluster3:VMS /vms glusterfs defaults,_netdev,x-systemd.automount,backupvolfile-server=gluster1,backupvolfile-server=gluster2 0 0" >> /etc/fstab
+Em cada Host executar a montagem em si com:
+
+#mount -a
+E verificar se montou com sucesso:
+
+#df -h
+Mostrará o seguinte resultado (exemplo da saída no Host 1):
+
+1
+...
+#gluster1:VMS  2.0T  35G  2.0T  2% /vms
+Para testar se os dados estão sendo replicados executar o seguinte comando somente em um dos Hosts (serão criados 10 arquivos no volume Gluster configurado e montado em /vms):
+
+#for i in `seq -w 1 10`; do cp -rp /var/log/messages /vms/copy-test-$i; done
+Então deve-se acessar cada Servidor e verificar se os arquivos estão presentes com o comando:
+
+#ls -lA /vms/copy*
+Mostrará o seguinte resultado:
+
+-rw-r----- 1 root adm 320784 Oct  4 16:37 /vms/copy-test-01
+-rw-r----- 1 root adm 320784 Oct  4 16:37 /vms/copy-test-02
+-rw-r----- 1 root adm 320784 Oct  4 16:37 /vms/copy-test-03
+-rw-r----- 1 root adm 320784 Oct  4 16:37 /vms/copy-test-04
+-rw-r----- 1 root adm 320784 Oct  4 16:37 /vms/copy-test-05
+-rw-r----- 1 root adm 320784 Oct  4 16:37 /vms/copy-test-06
+-rw-r----- 1 root adm 320784 Oct  4 16:37 /vms/copy-test-07
+-rw-r----- 1 root adm 320784 Oct  4 16:37 /vms/copy-test-08
+-rw-r----- 1 root adm 320784 Oct  4 16:37 /vms/copy-test-09
+-rw-r----- 1 root adm 320784 Oct  4 16:37 /vms/copy-test-10
+
+
+O Volume GlusterFS criado e montado em /vms funciona como uma espécie de link para a partição LVM /dev/sda4, que foi criada anteriormente no tópico 4 deste manual. Logo, é interessante conferir também, em cada Host, se os arquivos foram criados na pasta onde a partição LVM foi montada (/mnt/lv/vmstg/vms). Os mesmos arquivos serão listados com o comando:
+
+#ls -lA /mnt/lv/vmstg/vms/copy*
+Deve-se remover os arquivos criados para teste executando o seguinte comando em somente 1 dos Hosts (nos outros 2 serão removidos automaticamente pelo Gluster):
+
+#rm /vms/copy*
+Com isso o Cluster de armazenamento hiperconvegente está configurado e pronto para uso. Contudo, ainda é necessário realizar o procedimento do capítulo 9 deste manual para que o Proxmox possa usar ele de fato. Logo, deve-se pular o tópico seguinte deste capítulo, pular também o capítulo 8. ADIÇÃO DE NOVOS SERVIDORES AO GLUSTERFS e ir seguir direto para o capítulo 9. FINALIZAÇÃO DO CLUSTER PROXMOX.
+
+7.2. CRIAÇÃO DO VOLUME DO TIPO DISTRIBUÍDO EM 1 SERVIDOR
+
+Neste cenário será criado um Volume Gluster do tipo Distribuído, já que não é possível criar um volume do tipo Replicado com somente somente 1 Servidor rodando o Proxmox com o GlusterFS. Quando os outros 2 Servidores forem unidos ao pool do serviço Gluster, esse volume será convertido para o tipo Réplica.
+
+Para verificar a definição atual do serviço Gluster, deve-se executar:
+
+
+#gluster pool list
+#gluster peer status
+Mostrará o seguinte resultado, pois não há nenhum volume definido e os outros Servidores ainda não fazem parte do Gluster:
+
+UUID                                    Hostname        State
+f65851be-3a13-4e43-9ba3-45a9054c4e5a    localhost       Connected 
+
+Number of Peers: 0
+
+É interessante executar o comando seguinte antes de se criar o volume. Ele indicará que nenhum volume foi configurado ainda.
+
+1
+gluster volume info
+O comando seguinte cria o Volume GlusterFS, de nome "VMS" do tipo Distribuído no Host. Conforme especificado após o nome do Host no comando (depois do ":"), o volume utilizará o diretório /mnt/lv/vmstg onde a partição LVM foi montada anteriormente (mais uma vez, adaptar os nomes conforme o Campus).
+
+1
+gluster volume create VMS gluster1.reitoria.ifsertao-pe.edu.br:/mnt/lv/vmstg/vms
+Agora é necessário iniciar o volume criado:
+
+1
+gluster volume start VMS
+Para verificar o volume criado:
+
+1
+gluster volume info
+Mostrará o seguinte resultado:
+
+Volume Name: VMS
+Type: Distribute
+Volume ID: ...
+Status: Started
+Snapshot Count: 0
+Number of Bricks: 1
+Transport-type: tcp
+Bricks:
+Brick1: gluster1.reitoria.ifsertao-pe.edu.br:/mnt/lv/vmstg/vms
+Options Reconfigured:
+storage.fips-mode-rchecksum: on
+transport.address-family: inet
+nfs.disable: on
+
+Na saída é possível observar que o volume de nome "VMS" do tipo "Distribute" foi criado e iniciado e possui com 1 Brick no Host 1, indicando que ele só foi configurado no Host atual.
+
+Neste ponto o volume está criado, inicializado, mas ainda não pode ser utilizado. É necessário montar ele executando os comandos seguintes.
+
+Deve-se criar o ponto de montagem:
+
+1
+mkdir -p /vms
+Deve-se configurar em seguida a montagem automática no boot do sistema, executando o seguinte comando:
+
+1
+echo "gluster1:VMS /vms glusterfs defaults,_netdev,x-systemd.automount 0 0" >> /etc/fstab
+Por fim deve-se realizar a montagem em si e verificar se montou com sucesso:
+
+1
+mount -a
+1
+df -h
+Mostrará o seguinte resultado:
+
+1
+...
+2
+gluster1:VMS  2.0T  35G  2.0T  2% /vms
+Com isso o serviço GlusterFS está configurado e o Volume "VMS" está funcional no Host em questão. Contudo, a solução deste manual ainda não foi finalizada, pois ela consiste em um Cluster Hiperconvergente com 3 Servidores.
+
+https://manuais.ifsertao-pe.edu.br/link/266#bkmrk-caso-n%C3%A3o-se-possa-fi
+ 
+Caso não se possa finalizar o Cluster ainda (para preservar o atual ambiente de virtualização em produção no Campus, por exemplo), deve-se seguir direto para o capítulo 9. FINALIZAÇÃO DO CLUSTER PROXMOX a fim de se configurar o Storage GlusterFS no Proxmox. Caso contrário, deve-se continuar no capítulo 8. ADIÇÃO DE NOVOS SERVIDORES AO GLUSTERFS.

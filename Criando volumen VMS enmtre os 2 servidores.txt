@@ -1,0 +1,60 @@
+## Criando volumen VMS enmtre os 2 servidores ##
+
+	primeiro temos que criar uma confiança entre os servidores,usando 
+o comando!
+
+#gluster peer probe gluster1
+resultado: peer probe: success
+
+#gluster pool list
+
+gluster volume create VMS replica 2 gluster1:/mnt/pve/DATA/vms gluster2:/mnt/pve/DATA/vms
+
+e agora vamosiniciar o volume!
+#gluster volume start VMS 
+resultado: volume start: VMS: success
+
+Comando para saber o status dos volumes criados
+#gluster vol status
+
+
+## Criando o GlusterFS Server ##
+
+gluster peer probe proxmox02
+gluster volume create VMS proxmox01: /DATA/vms
+
+gluster volume add-brick VMS replica 2 proxmox02: /DATA/vms
+
+gluster vol status VMS
+gluster vol info VMS
+
+gluster peer probe proxmox03
+gluster volume add-brick VMS replica 3 proxmox03: /DATA/vms
+
+
+gluster vol set VMS cluster.heal-timeout 5
+gluster volume heal VMS enable
+gluster vol set VMS cluster.quorum-reads false
+gluster vol set VMS cluster.quorum-count 1
+gluster vol set VMS network.ping-timeout 2
+gluster volume set VMS cluster.favorite-child-policy mtime
+gluster volume heal VMS granular-entry-heal enable
+gluster volume set VMS cluster.data-self-heal-algorithm full
+gluster volume set VMS features.shard on
+
+Criando agoira a pastar VMS na raiz /
+e apos isso editar no fstab a seguinte linha /etc/fstab
+ 
+gluster1:VMS /vms glusterfs defaults,_netdev,x-systemd.automount,backupvolfile-server-gluster2 0 0
+
+echo "gluster1:VMS /vms glusterfs defaults,_netdev,x-systemd.automount,backupvolfile-server=gluster2 0 0" >> /etc/fstab
+echo "gluster2:VMS /vms glusterfs defaults,_netdev,x-systemd.automount,backupvolfile-server=gluster1 0 0" >> /etc/fstab
+
+e apos isso mointar a pasta VMS com o comando
+ #mount /vms
+ 
+e replicar  no servidor 2
+
+gluster2:VMS /vms glusterfs defaults,_netdev,x-systemd.automount,backupvolfile-server-gluster1 0 0
+
+E agoira criar um diretorio com o ID de STG-VMS e no Directory /vms e marcva a caixa shared

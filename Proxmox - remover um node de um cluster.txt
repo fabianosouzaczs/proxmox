@@ -1,0 +1,38 @@
+1. Acessar por linha de comando o host e listar os nodes existentes:
+
+pvecm nodes
+root@proxmox2:~# pvecm nodes
+
+Membership information
+----------------------
+Nodeid Votes Name
+1 1 proxmox1 (local)
+2 1 proxmox2
+3 1 proxmox3
+4 1 proxmox4
+2. RECOMENDAÇÕES IMPORTANTES:
+
+Depois de ter desligado o node que será removido, siga com o procedimento abaixo, com muito cuidado, pois o node será removido permanentemente.
+Você não deve incluir novamente um node com o mesmo nome do node removido.
+Não ligue novamente o node removido, de forma que ele tente conectar ao cluster novamente. 
+Não utilize o mesmo endereço IP local do node que foi removido, em um novo node no mesmo cluster.
+3. Comandos para remoção definitiva do node:
+
+pvecm delnode <nodename>
+Por exemplo:
+
+pvecm delnode proxmox4 
+4. Para remover o node que foi retirado do cluster, da interface gráfica do Proxmox: 
+
+Acesse um node ativo do cluster e liste as configurações:
+
+ls -l /etc/pve/nodes
+proxmox1 proxmox2 proxmox3 proxmox4
+Cada node possui seu respectivo diretório incluindo as configurações das VMs existentes no node.  Estes diretórios são sincronizados entre todos os nodes que compõe o cluster.
+
+O node que foi removido do cluster, ainda terá o seu diretório existente em /etc/pve/nodes.
+
+Se você deseja remover da interface gráfica, você deverá então mover o diretório correspondente ao node, para outro local (por segurança, evite exclui-lo), por exemplo:
+
+mv /etc/pve/nodes/proxmox4 /root/proxmox4
+ 

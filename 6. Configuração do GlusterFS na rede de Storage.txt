@@ -1,0 +1,31 @@
+Com o Gluster instalado, é necessário configurá-lo para ele utilizar a rede de storage para a replica das Máquinas Virtuais. Como definido anteriormente, será utilizada a porta 4 do adaptador de rede de cada servidor. Logo, os comandos seguintes devem ser realizados todos os servidores do Cluster Proxmox.
+
+O comando seguinte verifica em qual rede e porta o Gluster está escutando:
+
+#ss -atpn | grep glusterd
+Mostrará o seguinte:
+
+#LISTEN  0  1024  0.0.0.0:24007  0.0.0.0:*  users:(("glusterd",pid=945,fd=11))
+Na saída do comando há a informação "0.0.0.0:24007", indicando que o serviço está escutando em qualquer rede pela por 24007.
+
+Para configuração do Gluster na rede de Storage, é necessário editar o arquivo seguinte:
+
+#vim /etc/glusterfs/glusterd.vol
+Com o arquivo aberto para edição, deve-se procurar a linha "option transport.socket.listen-port 24007" e inserir o seguinte conteúdo abaixo dela. Deve-se adaptar o nome "gluster1.reitoria.ifsertao-pe.edu.br" de acordo com o Campus e com o Host que está sendo configurado:
+
+#option transport.rdma.bind-address gluster1.reitoria.ifsertao-pe.edu.br
+#option transport.socket.bind-address gluster1.reitoria.ifsertao-pe.edu.br
+#option transport.tcp.bind-address gluster1.reitoria.ifsertao-pe.edu.br
+
+Reiniciar o  Gluster:
+
+#systemctl restart glusterd.service
+
+systemctl restart glusterd.service
+Por fim, deve-se verificar se as configurações foram realizadas com sucesso:
+
+#ss -atpn | grep glusterd
+Deve mostrar o seguinte:
+
+#LISTEN  0  1024  192.168.200.101:24007  0.0.0.0:*  users:(("glusterd",pid=945,fd=11))
+Na saída do comando é possível verificar que agora o Gluster está utilizando a rede de Storage com a informação "192.168.200.101:24007".

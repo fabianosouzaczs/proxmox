@@ -1,0 +1,26 @@
+O serviço GlusterFS deve ser instalados em todos os Hosts do Cluster Proxmox. Ele será o responsável pela hiperconvergência ao realizar o espelhamento das Máquinas Virtuais entre os Servidores.
+
+A princípio deve-se configurar o repositório da ferramenta. Os comandos seguintes adicionam o repositório do Gluster na versão 10 para o sistema Debian 10 Bullseye (que é o SO base do Proxmox na versão 7):
+
+wget -O - https://download.gluster.org/pub/gluster/glusterfs/10/rsa.pub | apt-key add -
+echo deb [arch=amd64] https://download.gluster.org/pub/gluster/glusterfs/10/10.2/Debian/bullseye/amd64/apt/ bullseye main > /etc/apt/sources.list.d/gluster.list
+
+É necessário atualizar os pacotes com os pacotes do repositório adicionado (e aproveitar para atualizar o sistema):
+
+#apt-get update -y && apt-get upgrade -y
+Agora deve-se instalar o daemon do GlusterFS:
+
+#apt-get install glusterfs-server -y
+O comando seguinte inicializa os serviços utilizados pelo Gluster:
+
+systemctl start gluster-ta-volume.service
+systemctl start glusterd.service
+systemctl start glustereventsd.service
+systemctl start glusterfssharedstorage.service
+
+Para verificar se o serviço foi iniciado e instalado com sucesso:
+
+#systemctl status glusterd.service
+Por fim, habilita-se o serviço Gluster no boot do sistema:
+
+#systemctl enable glusterd.service

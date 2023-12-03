@@ -1,0 +1,10 @@
+## Alterar o servidor para podertrabalhar com 2 servidores ##
+vim/nano /etc/pve/corosync.conf
+
+tem que alterar o arquivo que fica!
+
+ quorum {
+	provider: corosync_votequorum
+	expected_votes: 1
+	two_note: 1
+	}
