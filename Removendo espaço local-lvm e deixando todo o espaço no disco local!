@@ -1,0 +1,17 @@
+
+pagando volume
+# lvremove /dev/pve/data
+
+extendendo volume
+# lvresize -l +100%FREE /dev/pve/root
+
+mapeando o espaço restate
+# resize2fs /dev/mapper/pve-root
+
+----------------------------------------------------------------
+# Almentando o tamanho do disco principal do proxmox em XFS
+
+resize2fs /dev/mapper/pve-root
+
+#Comando para liberar ou alocar o tamanho restande do disco em XFS
+xfs_growfs /
