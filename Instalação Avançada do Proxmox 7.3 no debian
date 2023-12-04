@@ -91,6 +91,7 @@ Pós instalação
 
 
     Remover Kernel Debian
+# update-grub
 
 # apt remove linux-image-amd64 'linux-image-5.10*' && update-grub && reboot
 
