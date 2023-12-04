@@ -1,3 +1,14 @@
+Tutorial original do video e link da documentaçã segue a baixo!
+
+YOUTUBE: https://youtu.be/P_OsVKmTF44
+LINK: https://wiki.projetoroot.com.br/index.php/Instala%C3%A7%C3%A3o_Avan%C3%A7ada_do_Proxmox_7.3
+
+O Proxmox VE permite virtualizar até as mais exigentes cargas de trabalho de aplicativos do Linux e do Windows. Ao combinar duas tecnologias de virtualização em uma única plataforma. O Proxmox VE fornece flexibilidade máxima ao seu data center. Inclui forte suporte de alta disponibilidade (HA), onde você não precisa de um servidor de gerenciamento adicional economizando recursos e permitindo HA sem ponto único de falha.
+
+Site Oficial: https://www.proxmox.com/en/
+
+Documentação Oficial: https://pve.proxmox.com/pve-docs/ 
+
 Instalação do SO
 
 Para instalação Avançada do Proxmox, optou-se em utilizar o Sistema Operacional Debian Linux, em sua versão 11.5 Non-Free
